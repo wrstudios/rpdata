@@ -1,6 +1,6 @@
 # Rpdata
 
-TODO: Write a gem description
+The rpdata gem was created to be a middleware, abstracting the communication with the rpdata webservices. The idea is to provide a simple method interface and sequence of steps to interact with their API.
 
 ## Installation
 
@@ -18,7 +18,14 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+TODO: Write usage example here...
+
+## Running tests
+
+Yes, we have written Rspec tests for it.
+
+    $ rake 
+should run the tests
 
 ## Contributing
 
