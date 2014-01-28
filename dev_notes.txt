@@ -1,0 +1,21 @@
+
+
+Does Property History also works for rentals? 
+
+Should we start developing using RPGateway V3? 
+
+
+
+get_property_detail brings sale and rent history. what's the difference between that and salesService.wsdl - get_sale_detail? 
+
+
+TODO: 
+
+sale history for propertyid
+
+rental history for propertyid
+
+See suggested price, evaluations
+
+
+

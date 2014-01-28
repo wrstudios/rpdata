@@ -1,0 +1,89 @@
+<salesHistoryList>
+          <messages>
+            <message/>
+            <messageKey/>
+            <messageType>Success</messageType>
+          </messages>
+          <agentAdvice>false</agentAdvice>
+          <propertyId>6817048</propertyId>
+          <transferDate>2003-04-26T00:00:00.000+10:00</transferDate>
+          <transferId>48426477</transferId>
+          <transferPrice>245000</transferPrice>
+          <transferType>Normal Sale</transferType>
+          <vendors>
+            <firstName>Thomas Francis</firstName>
+            <lastName>O'Hara</lastName>
+            <vendorId>16132399</vendorId>
+          </vendors>
+          <vendors>
+            <firstName>Rhonda Adeline</firstName>
+            <lastName>O'Hara</lastName>
+            <vendorId>16132400</vendorId>
+          </vendors>
+          <settlementDate>2003-06-02T00:00:00.000+10:00</settlementDate>
+          <armsLengthTransaction>true</armsLengthTransaction>
+          <source>GOVERNMENT</source>
+        </salesHistoryList>
+        <salesHistoryList>
+          <messages>
+            <message/>
+            <messageKey/>
+            <messageType>Success</messageType>
+          </messages>
+          <agentAdvice>false</agentAdvice>
+          <propertyId>6817048</propertyId>
+          <transferDate>2002-10-21T00:00:00.000+10:00</transferDate>
+          <transferId>48426476</transferId>
+          <transferPrice>110500</transferPrice>
+          <transferType>Extraordinary Circumstance</transferType>
+          <vendors>
+            <firstName>Thomas Francis</firstName>
+            <lastName>O'Hara</lastName>
+            <vendorId>17024128</vendorId>
+          </vendors>
+          <vendors>
+            <firstName>Rhonda Adeline</firstName>
+            <lastName>O'Hara</lastName>
+            <vendorId>17024129</vendorId>
+          </vendors>
+          <settlementDate>2002-11-29T00:00:00.000+10:00</settlementDate>
+          <transferRelationship>ONE &amp; THE SAME</transferRelationship>
+          <armsLengthTransaction>false</armsLengthTransaction>
+          <source>GOVERNMENT</source>
+        </salesHistoryList>
+        <salesHistoryList>
+          <messages>
+            <message/>
+            <messageKey/>
+            <messageType>Success</messageType>
+          </messages>
+          <agentAdvice>false</agentAdvice>
+          <propertyId>6817048</propertyId>
+          <transferDate>1995-08-04T00:00:00.000+10:00</transferDate>
+          <transferId>48426472</transferId>
+          <transferPrice>123000</transferPrice>
+          <transferType>Normal Sale</transferType>
+          <vendors>
+            <firstName>Maurice R</firstName>
+            <lastName>Doube</lastName>
+            <vendorId>13833736</vendorId>
+          </vendors>
+          <settlementDate>1995-08-04T00:00:00.000+10:00</settlementDate>
+          <armsLengthTransaction>true</armsLengthTransaction>
+          <source>GOVERNMENT</source>
+        </salesHistoryList>
+        <salesHistoryList>
+          <messages>
+            <message/>
+            <messageKey/>
+            <messageType>Success</messageType>
+          </messages>
+          <agentAdvice>false</agentAdvice>
+          <propertyId>6817048</propertyId>
+          <transferDate>1983-01-27T00:00:00.000+10:00</transferDate>
+          <transferId>48426471</transferId>
+          <transferPrice>135000</transferPrice>
+          <transferType>Multi-Sale</transferType>
+          <armsLengthTransaction>true</armsLengthTransaction>
+          <source>GOVERNMENT</source>
+        </salesHistoryList>
