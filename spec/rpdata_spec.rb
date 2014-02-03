@@ -53,6 +53,15 @@ describe Rpdata do
 
     end
 
+    describe "based on a postcode" do 
+      describe "#suburb_stats" do 
+        it "should return the suburbs statistics" do 
+          response = Rpdata.suburb_stats( @session_token, "Sunshine Beach", "4567", "QLD")
+          expect(response).to be_an_instance_of(OpenStruct)
+        end
+      end
+    end
+
     describe "based on a rpdata property id" do 
       
       before do 
@@ -115,8 +124,8 @@ describe Rpdata do
       describe "property_details" do 
         
         it "should return a response object"  do 
-          response = Rpdata.property_details( @session_token, @rp_data_id ).body
-          expect( response.keys ).to include(:get_property_detail_response)
+          response = Rpdata.property_details( @session_token, @rp_data_id )
+          expect( response ).to be_an_instance_of(OpenStruct)
         end
 
         it "should raise an expection if an id is not provided" do 

@@ -15,7 +15,9 @@ module Rpdata
 	  on_the_market: "http://rpp.rpdata.com/bsgAU-2.0/ws/onTheMarketService.wsdl"	,
     session: "http://rpp.rpdata.com/bsgAU-2.0/ws/sessionService.wsdl",
     imagery: "http://rpp.rpdata.com/bsgAU-2.0/ws/propertyImageryService.wsdl",
-    valuers: "http://rpp.rpdata.com/bsgAU-2.0/ws/valuersService.wsdl"
+    valuers: "http://rpp.rpdata.com/bsgAU-2.0/ws/valuersService.wsdl",
+    property_statistics: "http://rpp.rpdata.com/bsgAU-2.0/ws/propertyStatisticsService.wsdl"
+
   }
 
   ##
@@ -40,6 +42,21 @@ module Rpdata
     else
       raise SomeError
     end
+  end
+
+  def self.suburb_stats( session_token, suburb, postcode, state )
+    options = { showNumberSold12Mths: true, showMedianSalePrice: true, showMedianPriceChange12Mths: true, showMedianAskingRent: true, showTotalListings12Mths: true, showTimeOnMarketDays: true }
+    message = { sessionToken: session_token, country: "AUS", categoryMjr: "HO", yearFrom: "2013", period: "10" , suburb: suburb , postcode: postcode, state: state, :propertyStatisticsOptions => options }  
+    body = client(:property_statistics).call(:get_suburb_statistics, message: message).body
+    response = body[:get_suburb_statistics_response]
+    OpenStruct.new({
+      number_sold_12_mths: response[:number_sold_12_mths],
+      median_sale_price: response[:median_sale_price],
+      median_price_change_12_mths: response[:median_price_change_12_mths],
+      median_asking_rent: response[:median_asking_rent],
+      total_listings12_mths: response[:total_listings12_mths],
+      time_on_market_days: response[:time_on_market_days]
+      })
   end
 
   def self.id_for_address( session_token, suggestion_string )
@@ -81,9 +98,32 @@ module Rpdata
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
   def self.property_details( session_token , rp_data_property_id )
+    property_details = OpenStruct.new( sale_history: [], market_sale_history: [], market_rental_history: [])
     with_valid_id(rp_data_property_id) do 
       message = { sessionToken: session_token, propertyId: rp_data_property_id }  
-      client(:property).call(:get_property_detail, message: message)    
+      body = client(:property).call(:get_property_detail, message: message).body
+      response = body[:get_property_detail_response][:property]
+      puts "property..."
+      
+      if response[:sales_history_list].is_a?(Array)
+        property_details.sale_history = response[:sales_history_list]
+      else  
+        property_details.sale_history << response[:sales_history_list]
+      end
+      if response[:listing_list].is_a?(Array)
+        property_details.market_sale_history = response[:listing_list]  
+      else
+        property_details.market_sale_history << response[:listing_list]
+      end
+      if response[:rental_list].is_a?(Array)
+        property_details.market_rental_history = response[:rental_list]
+      else
+        property_details.market_rental_history << response[:rental_list]
+      end
+
+      puts "market history as rental"
+      puts property_details.market_rental_history.first.inspect
+      property_details
     end
   end
 
@@ -214,7 +254,7 @@ module Rpdata
       address = body[body.keys.first][:property][:property_address] 
       attributes = body[body.keys.first][:property][:property_attributes]
       OpenStruct.new( unit_number: address[:unit_designator], street_number: address[:street_designator], address: address[:address],
-        street_name: address[:street_name], street_type: address[:street_extension], post_code: address[:post_code], suburb: address[:locality_name],
+        street_name: address[:street_name], street_type: address[:street_extension], post_code: address[:post_code], suburb: address[:locality_name], state: address[:state_code],
         bedrooms: attributes[:bedrooms], bathrooms: attributes[:bathrooms], car_spaces: attributes[:car_spaces], land_area: attributes[:land_area],
          year_built: year_built, photo: body[body.keys.first][:property][:property_default_photo][:thumbnail_url])
     end
