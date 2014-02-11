@@ -67,7 +67,7 @@ describe Rpdata do
       before do 
         #@rp_data_id = Rpdata.suggestion_list( @session_token, "380 David Low Way" ).body[:get_property_match_response][:suggestions].first[:property_id] 
         #@rp_data_id = '6168318'
-        @rp_data_id = Rpdata.id_for_address(@session_token, '3/3 Belah Court, Marcus Beach')
+        @rp_data_id = Rpdata.id_for_address(@session_token, '7 Duke Street, Sunshine Beach QLD')
       end
 
       describe "property_history" do 
@@ -125,6 +125,8 @@ describe Rpdata do
         
         it "should return a response object"  do 
           response = Rpdata.property_details( @session_token, @rp_data_id )
+          puts "inspecting the thing...."
+          puts response.sale_history.inspect
           expect( response ).to be_an_instance_of(OpenStruct)
         end
 

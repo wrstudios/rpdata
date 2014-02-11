@@ -56,7 +56,7 @@ module Rpdata
       median_asking_rent: response[:median_asking_rent],
       total_listings12_mths: response[:total_listings12_mths],
       time_on_market_days: response[:time_on_market_days]
-      })
+    })
   end
 
   def self.id_for_address( session_token, suggestion_string )
@@ -256,7 +256,7 @@ module Rpdata
       OpenStruct.new( unit_number: address[:unit_designator], street_number: address[:street_designator], address: address[:address],
         street_name: address[:street_name], street_type: address[:street_extension], post_code: address[:post_code], suburb: address[:locality_name], state: address[:state_code],
         bedrooms: attributes[:bedrooms], bathrooms: attributes[:bathrooms], car_spaces: attributes[:car_spaces], land_area: attributes[:land_area],
-         year_built: year_built, photo: body[body.keys.first][:property][:property_default_photo][:thumbnail_url])
+         year_built: year_built, photo: body[body.keys.first][:property][:property_default_photo][:thumbnail_url], id: body[body.keys.first][:property][:property_id] )
     end
   end
 
