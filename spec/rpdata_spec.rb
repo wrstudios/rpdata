@@ -38,7 +38,6 @@ describe Rpdata do
       end
     end
 
-    
     describe "suggestion_list" do
 
       it "should get a suggestion list based on a single line search" do 
@@ -81,7 +80,7 @@ describe Rpdata do
       describe "comparable otms" do 
 
         it "should return the comparable On The Market properties" do 
-          response = Rpdata.comparable_otms( @session_token, @rp_data_id )
+          response = Rpdata.comparable_otms_valuers( @session_token, @rp_data_id )
           expect(response).to be_an_instance_of(Array)
         end
 
@@ -109,6 +108,69 @@ describe Rpdata do
 
       end
 
+
+
+
+
+      describe "#fetch_property" do 
+        it "should work" do 
+          response = Rpdata.fetch_property( @session_token, @rp_data_id )
+          expect(response).to be_an_instance_of(OpenStruct)
+        end
+      end
+
+      describe "#property_ids_by_nearest_suburb" do 
+        it "should work" do 
+          response = Rpdata.property_ids_by_nearest_suburb( @session_token, @rp_data_id )        
+          expect(response).to be_an_instance_of(Array)
+        end
+      end
+
+      describe "#refine_sold_properties" do 
+        it 'should work' do 
+          property = Rpdata.fetch_property(@session_token, @rp_data_id)
+          nearest_properties_ids = Rpdata.property_ids_by_nearest_suburb( @session_token, property.property_id ).collect(&:property_id)
+          response = Rpdata.refine_sold_properties( @session_token, nearest_properties_ids, property )
+          expect(response).to be_an_instance_of(Array)
+          resp = Rpdata.property_summary( @session_token , response.first )
+          puts resp
+        end 
+      end
+
+      describe "#recent_sales" do 
+        it 'should work' do 
+          nearest_properties_ids = Rpdata.property_ids_by_nearest_suburb( @session_token, @rp_data_id ).collect(&:property_id)
+          response = Rpdata.recent_sales( @session_token, nearest_properties_ids )
+          expect(response).to be_an_instance_of(Array)
+          puts response
+        end        
+      end
+
+      describe "#refine_otm_properties(sales)" do
+        it 'should work' do 
+          property = Rpdata.fetch_property(@session_token, @rp_data_id)
+          nearest_properties_ids = Rpdata.property_ids_by_nearest_suburb( @session_token, property.property_id ).collect(&:property_id)
+          response = Rpdata.refine_otm_properties( @session_token, nearest_properties_ids, property )
+          puts Rpdata.otm_property_summary_list( @session_token, response )
+        end
+      end
+
+      describe "#rental_otms" do 
+        it 'should work' do 
+          property = Rpdata.fetch_property(@session_token, @rp_data_id)
+          nearest_properties_ids = Rpdata.property_ids_by_nearest_suburb( @session_token, property.property_id ).collect(&:property_id)
+          response = Rpdata.rental_otms( @session_token, nearest_properties_ids, property )
+          puts response
+        end
+      end
+
+      describe "#sales_radius_search" do 
+        it "should work" do 
+          response = Rpdata.sales_radius_search(@session_token, @rp_data_id, 5)
+          expect(response).to be_an_instance_of(Hash)
+        end
+      end
+
       describe "appraisal_data" do 
 
         it "should return an OPenStruct with the relevant appraisal data" do 
@@ -125,22 +187,21 @@ describe Rpdata do
         
         it "should return a response object"  do 
           response = Rpdata.property_details( @session_token, @rp_data_id )
-          puts "inspecting the thing...."
           puts response.sale_history.inspect
           expect( response ).to be_an_instance_of(OpenStruct)
         end
 
         it "should raise an expection if an id is not provided" do 
           expect { Rpdata.property_details( @session_token , nil) }.to raise_error(ArgumentError)
-        end
+        end 
 
       end
 
       describe "property_summary" do 
         
         it "should return a response object" do 
-         response = Rpdata.property_summary( @session_token, @rp_data_id ).body
-         expect( response.keys ).to include(:get_property_summary_response)
+         response = Rpdata.property_summary( @session_token, @rp_data_id )
+         expect( response ).to be_an_instance_of(Hash)
         end
 
         it "should raise an exception if an id is not provided" do
@@ -149,15 +210,16 @@ describe Rpdata do
 
       end
 
-      describe "sale_history" do 
+      describe "sale_detail" do 
         
         it "should return a response object" do 
-          response = Rpdata.sale_history( @session_token, @rp_data_id ).body
-          expect( response.keys ).to include(:get_sale_detail_response)
+          response = Rpdata.sale_detail( @session_token, @rp_data_id )
+          puts response
+          expect( response ).to be_a(OpenStruct)
         end
 
         it "should raise an exception if an id is not provided" do 
-          expect{ Rpdata.sale_history(@session_token, nil)}.to raise_error(ArgumentError)
+          expect{ Rpdata.sale_detail(@session_token, nil)}.to raise_error(ArgumentError)
         end 
 
       end
@@ -165,8 +227,8 @@ describe Rpdata do
       describe "on_the_market_history" do 
 
         it "should get the On The Market history" do 
-          response = Rpdata.on_the_market_history( @session_token, @rp_data_id ).body
-          expect( response.keys ).to include(:get_listings_for_property_id_response)
+          response = Rpdata.on_the_market_history( @session_token, @rp_data_id )
+          expect( response ).to be_a(Array)
         end
 
         it "should raise an exception if an id is not provided" do 

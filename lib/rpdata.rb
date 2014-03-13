@@ -73,7 +73,8 @@ module Rpdata
   def self.property_summary( session_token , rp_data_property_id )
     with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id }  
-      client(:property).call(:get_property_summary, message: message)    
+      response_hash = client(:property).call(:get_property_summary, message: message).body    
+      response_hash[:get_property_summary_response][:property_summary]
     end
   end
 
@@ -104,8 +105,8 @@ module Rpdata
       body = client(:property).call(:get_property_detail, message: message).body
       response = body[:get_property_detail_response][:property]
       puts "property..."
-      
       if response[:sales_history_list].is_a?(Array)
+      
         property_details.sale_history = response[:sales_history_list]
       else  
         property_details.sale_history << response[:sales_history_list]
@@ -132,10 +133,13 @@ module Rpdata
   # 
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
-  def self.sale_history( session_token, rp_data_property_id )
+  def self.sale_detail( session_token, rp_data_property_id )
     with_valid_id(rp_data_property_id) do  
       message = { sessionToken: session_token, propertyId: rp_data_property_id }
-      client(:sales).call(:get_sale_detail, message: message)
+      response_hash = client(:sales).call(:get_sale_detail, message: message).body
+      p = response_hash[:get_sale_detail_response][:sold_property]
+      OpenStruct.new( photo: p[:property_default_photo][:large_url], address: p[:property_address][:address] ,
+                      sale_date: p[:transfer_date] , sale_method: p[:transfer_type] , price: p[:transfer_price] , attributes: p[:property_attributes][:property_attribute_summary] )
     end
   end
 
@@ -175,8 +179,62 @@ module Rpdata
     end
     property_history
   end
+  
+  def self.fetch_property( session_token, rp_data_property_id )
+    with_valid_id(rp_data_property_id) do 
+      message = { sessionToken: session_token, propertyIdInput: { propertyIdList: rp_data_property_id }, fetchProperties: true, propertiesCriteria: {mappingDetailsOnly: false, pageNumber: 1, pageSize: 50} }
+      response_hash = client(:property_search).call(:search, message: message).body
+      property_hash = response_hash[:search_response][:property_search_properties_result][:property_search_properties]
+      OpenStruct.new(property_id: property_hash[:property_id], longitude: property_hash[:longitude], 
+                     latitude: property_hash[:latitude], property_type: property_hash[:property_type],
+                     avm: property_hash[:auto_value_estimate], bedrooms: property_hash[:property_attributes][:bedrooms], 
+                     bathrooms: property_hash[:property_attributes][:bathrooms], car_spaces: property_hash[:property_attributes][:car_spaces])
+    end
+  end
 
-  def self.comparable_otms( session_token, rp_data_property_id )
+  def self.property_ids_by_nearest_suburb( session_token, rp_data_property_id )
+    with_valid_id(rp_data_property_id) do 
+      message = { sessionToken: session_token , propertyId: rp_data_property_id, nearestNeighbourLimit: 5000 }
+      response_hash = client(:property).call(:get_property_ids_by_nearest_neighbour, message: message ).body
+      response_hash[:get_property_ids_by_nearest_neighbour_response][:nearest_neighbours].collect do |hash| 
+        OpenStruct.new property_id: hash[:property_id], distance_from_target: hash[:distance_from_target]
+      end
+    end
+  end
+
+  def self.refine_sold_properties( session_token, ids_list, target_property )
+    message = { sessionToken: session_token, bedrooms: target_property.bedrooms, propertyTypes: target_property.property_type, 
+               lastSalePriceFrom: (target_property.avm * 0.85 ) , lastSalePriceTo: (target_property.avm * 1.15 ), saleDateFrom: (Date.today - (12*30)).strftime("%Y-%m-%d") , propertyIdInput: { propertyIdList: ids_list } }
+    response_hash = client(:sales).call(:refine_sold_properties, message: message).body
+    response_hash[:refine_sold_properties_response][:property_id_list]
+  end 
+
+  def self.recent_sales( session_token, ids_list )
+    message = { session_token: session_token, propertyIdInput: { propertyIdList: ids_list }, fetchPropertyRecentSales: true , propertyRecentSalesCriteria: { pageNumber: 1 , pageSize: 10, mappingDetailsOnly: false }}
+    response_hash = client(:property_search).call(:search, message: message ).body
+    response_hash[:search_response][:property_search_recent_sales_result][:property_search_sales].collect{ |x| x[:property_id] }
+  end
+
+  def self.refine_otm_properties( session_token, ids_list, target_property ) 
+    message = { sessionToken: session_token, bedrooms: target_property.bedrooms,  listingPriceFrom: (target_property.avm * 0.85 ), listingPriceTo: (target_property.avm * 1.15 ), listingDateFrom: (Date.today - (21)).strftime("%Y-%m-%d") , propertyIdInput: { propertyIdList: ids_list } }
+    response_hash = client(:on_the_market).call(:refine_otm_properties, message: message).body
+    response_hash[:refine_otm_properties_response][:property_id_response][:property_id_list]
+  end
+
+  def self.rental_otms( session_token, ids_list , target_property )
+    message = { session_token: session_token, propertyIdInput: { propertyIdList: ids_list }, fetchPropertyOTMRental: true , propertyOTMRentalCriteria: { pageNumber: 1 , pageSize: 10, mappingDetailsOnly: false }}
+    response_hash = client(:property_search).call(:search, message: message ).body
+    response_hash[:search_response][:property_search_otm_rental_result][:property_search_ot_ms]
+  end
+
+  def self.otm_property_summary_list( session_token, ids_list )
+    message = { session_token: session_token, propertyIdInput: { propertyIdList: ids_list }}
+    response_hash = client(:on_the_market).call(:get_otm_property_summary_list, message: message ).body
+    response_hash[:get_otm_property_summary_list_response][:otm_summary_list]
+  end
+
+
+  def self.comparable_otms_valuers( session_token, rp_data_property_id )
     comparable_otms = []
     with_valid_id(rp_data_property_id) do  
       message = { sessionToken: session_token, propertyId: rp_data_property_id, fetchPropertyComparableOTMs: true }
@@ -188,6 +246,14 @@ module Rpdata
       end
     end
     comparable_otms
+  end
+
+  def self.sales_radius_search( session_token, rp_data_property_id, radius )
+    with_valid_id( rp_data_property_id ) do 
+      message = { sessionToken: session_token, fetchPropertySales: true, propertySalesCriteria: { soldFromDate: (Date.today - 1).iso8601 , pageNumber: 1, pageSize: 3, mappingDetailsOnly: false } ,
+      searchRadiusCriteria: { propertyTypes: ["UNIT, HOUSE"], radius: radius, latitude: '-33.87185899', longitude: '151.22386797'} }
+      hash = client(:property_search).call(:search, message: message ).body
+    end
   end
 
   # A list of sold properties.
@@ -232,7 +298,8 @@ module Rpdata
   def self.on_the_market_history( session_token, rp_data_property_id )
     with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id }
-      client(:on_the_market).call(:get_listings_for_property_id, message: message)
+      response_hash = client(:on_the_market).call(:get_listings_for_property_id, message: message).body
+      response_hash[:get_listings_for_property_id_response][:listings]
     end
   end
 
