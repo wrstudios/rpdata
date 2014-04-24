@@ -8,6 +8,8 @@ get_property_detail brings sale and rent history. what's the difference between 
 
 TODO: 
 
+  - Test different addresses
+
   - Order comparable sales and OTMs based on proximity
 
   - How to validate the user credentials? 

@@ -31,7 +31,7 @@ module Rpdata
   def self.suggestion_list( session_token, search_param ) 
     raise ArgumentError if search_param.blank? 
   	message = { sessionToken: session_token, :propertyAddressMatch => { :singleLine => search_param } }  
-  	client(:property_search).call(:get_property_match, message: message)
+  	validating_response client(:property_search).call(:get_property_match, message: message).body[:get_property_match_response]
   end
 
   def self.generate_token(username, password, client_id, integrator_id)
@@ -60,8 +60,8 @@ module Rpdata
   end
 
   def self.id_for_address( session_token, suggestion_string )
-    id = suggestion_list(session_token, suggestion_string).body[:get_property_match_response][:property_address_match][:property_id] rescue nil
-    id ||= suggestion_list(session_token, suggestion_string).body[:get_property_match_response][:suggestions].first[:property_id] 
+    id = suggestion_list(session_token, suggestion_string)[:property_address_match][:property_id] rescue nil
+    id ||= suggestion_list(session_token, suggestion_string)[:suggestions].first[:property_id] 
     id
   end
 
@@ -104,9 +104,8 @@ module Rpdata
       message = { sessionToken: session_token, propertyId: rp_data_property_id }  
       body = client(:property).call(:get_property_detail, message: message).body
       response = body[:get_property_detail_response][:property]
-      puts "property..."
+
       if response[:sales_history_list].is_a?(Array)
-      
         property_details.sale_history = response[:sales_history_list]
       else  
         property_details.sale_history << response[:sales_history_list]
@@ -121,9 +120,7 @@ module Rpdata
       else
         property_details.market_rental_history << response[:rental_list]
       end
-
-      puts "market history as rental"
-      puts property_details.market_rental_history.first.inspect
+    
       property_details
     end
   end
@@ -185,6 +182,8 @@ module Rpdata
       message = { sessionToken: session_token, propertyIdInput: { propertyIdList: rp_data_property_id }, fetchProperties: true, propertiesCriteria: {mappingDetailsOnly: false, pageNumber: 1, pageSize: 50} }
       response_hash = client(:property_search).call(:search, message: message).body
       property_hash = response_hash[:search_response][:property_search_properties_result][:property_search_properties]
+      puts "fetch property"
+      puts property_hash.inspect
       OpenStruct.new(property_id: property_hash[:property_id], longitude: property_hash[:longitude], 
                      latitude: property_hash[:latitude], property_type: property_hash[:property_type],
                      avm: property_hash[:auto_value_estimate], bedrooms: property_hash[:property_attributes][:bedrooms], 
@@ -218,7 +217,9 @@ module Rpdata
   def self.refine_otm_properties( session_token, ids_list, target_property ) 
     message = { sessionToken: session_token, bedrooms: target_property.bedrooms,  listingPriceFrom: (target_property.avm * 0.85 ), listingPriceTo: (target_property.avm * 1.15 ), listingDateFrom: (Date.today - (21)).strftime("%Y-%m-%d") , propertyIdInput: { propertyIdList: ids_list } }
     response_hash = client(:on_the_market).call(:refine_otm_properties, message: message).body
-    response_hash[:refine_otm_properties_response][:property_id_response][:property_id_list]
+    puts "response hash"
+    puts response_hash.inspect
+    response_hash[:refine_otm_properties_response][:property_id_response][:property_id_list] rescue []
   end
 
   def self.rental_otms( session_token, ids_list , target_property )
@@ -318,12 +319,14 @@ module Rpdata
       body[body.keys.first][:property][:full_property_attributes].each do |full_property_attribute|
         year_built = full_property_attribute[:value] if full_property_attribute[:name] == "Year Built"
       end
+      puts "poorra"
+      puts body[body.keys.first][:property][:property_default_photo].inspect
       address = body[body.keys.first][:property][:property_address] 
       attributes = body[body.keys.first][:property][:property_attributes]
       OpenStruct.new( unit_number: address[:unit_designator], street_number: address[:street_designator], address: address[:address],
         street_name: address[:street_name], street_type: address[:street_extension], post_code: address[:post_code], suburb: address[:locality_name], state: address[:state_code],
         bedrooms: attributes[:bedrooms], bathrooms: attributes[:bathrooms], car_spaces: attributes[:car_spaces], land_area: attributes[:land_area],
-         year_built: year_built, photo: body[body.keys.first][:property][:property_default_photo][:thumbnail_url], id: body[body.keys.first][:property][:property_id] )
+         year_built: year_built, photo: ( body[body.keys.first][:property][:property_default_photo][:thumbnail_url] rescue nil ), id: body[body.keys.first][:property][:property_id] )
     end
   end
 
@@ -336,6 +339,18 @@ module Rpdata
   def self.with_valid_id( param )
     raise ArgumentError if param.blank?
     yield
+  end
+
+  def self.validating_response( response_body )
+    fkey = response_body.keys.first.to_sym
+    puts response_body[:messages]
+    puts fkey
+
+    if response_body[:messages][:message_type] == "Error"
+      raise Exception.new( "#{response_body[:messages][:message_key]} - #{response_body[:messages][:message]}" )
+    else
+      response_body
+    end
   end
 
 
