@@ -43,11 +43,8 @@ describe Rpdata do
       it "should get a suggestion list based on a single line search" do 
         response = Rpdata.suggestion_list( @session_token, "3/9 Jarnahill Drive Mount Coolum, QLD, 4573")
         expect( response ).to be_an_instance_of(Hash)
-        puts response[:property_address_match] 
-        response[:suggestions].each do | suggestion| 
-          puts "#{suggestion[:property_id]} - #{suggestion[:single_line]}"
-        end
-        expect(response.keys).to include(:get_property_match_response)
+        includes = [ response.keys.include?(:suggestions), response.keys.include?(:property_address_match) ] 
+        expect(includes).to include(true)
       end
 
       it "should raise ArgumentError if a search params is invalid" do 
