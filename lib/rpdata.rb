@@ -101,29 +101,11 @@ module Rpdata
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
   def self.property_details( session_token , rp_data_property_id )
-    property_details = OpenStruct.new( sale_history: [], market_sale_history: [], market_rental_history: [])
     with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id }
       body = client(:property).call(:get_property_detail, message: message).body
       response = body[:get_property_detail_response][:property]
-
-      if response[:sales_history_list].is_a?(Array)
-        property_details.sale_history = response[:sales_history_list]
-      else
-        property_details.sale_history << response[:sales_history_list]
-      end
-      if response[:listing_list].is_a?(Array)
-        property_details.market_sale_history = response[:listing_list]
-      else
-        property_details.market_sale_history << response[:listing_list]
-      end
-      if response[:rental_list].is_a?(Array)
-        property_details.market_rental_history = response[:rental_list]
-      else
-        property_details.market_rental_history << response[:rental_list]
-      end
-
-      property_details
+      OpenStruct.new(response)
     end
   end
 

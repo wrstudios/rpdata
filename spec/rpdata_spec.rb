@@ -64,7 +64,7 @@ describe Rpdata do
 
     describe "based on a rpdata property id" do
 
-      before do
+      before(:all) do
         #@rp_data_id = Rpdata.suggestion_list( @session_token, "380 David Low Way" ).body[:get_property_match_response][:suggestions].first[:property_id]
         #@rp_data_id = '6168318'
         @rp_data_id = Rpdata.id_for_address(@session_token, '3/9 Jarnahill Drive Mount Coolum, QLD, 4573' )
@@ -189,14 +189,18 @@ describe Rpdata do
 
       describe "property_details" do
 
+        let(:response) { Rpdata.property_details( @session_token, @rp_data_id ) }
+
         it "should return a response object"  do
-          response = Rpdata.property_details( @session_token, @rp_data_id )
-          # puts response.sale_history.inspect
           expect( response ).to be_an_instance_of(OpenStruct)
         end
 
-        it "should raise an expection if an id is not provided" do
+        it "should raise an exception if an id is not provided" do
           expect { Rpdata.property_details( @session_token , nil) }.to raise_error(ArgumentError)
+        end
+
+        it "should return a property address" do
+          expect(response.property_address[:address])
         end
 
       end
