@@ -3,14 +3,14 @@
 
 require "rpdata/version"
 
-require 'savon' 
+require 'savon'
 require 'ostruct'
 module Rpdata
 
-    
+
   AVAILABLE_WSDLS = {
   	property_search: "http://rpp.rpdata.com/bsgAU-2.0/ws/propertySearchService.wsdl",
-  	property: "http://rpp.rpdata.com/bsgAU-2.0/ws/propertyService.wsdl", 
+  	property: "http://rpp.rpdata.com/bsgAU-2.0/ws/propertyService.wsdl",
 	  sales: "http://rpp.rpdata.com/bsgAU-2.0/ws/salesService.wsdl",
 	  on_the_market: "http://rpp.rpdata.com/bsgAU-2.0/ws/onTheMarketService.wsdl"	,
     session: "http://rpp.rpdata.com/bsgAU-2.0/ws/sessionService.wsdl",
@@ -21,16 +21,16 @@ module Rpdata
   }
 
   ##
-  # Returns a suggestion list based on a +search_param+ 
-  # 
+  # Returns a suggestion list based on a +search_param+
+  #
   # Example: '6/380 Smith street, Vic 3058'
   #
   #
   # Raises an ArgumentError if +search_param+ is not provided.
   #
-  def self.suggestion_list( session_token, search_param ) 
-    raise ArgumentError if search_param.blank? 
-  	message = { sessionToken: session_token, :propertyAddressMatch => { :singleLine => search_param } }  
+  def self.suggestion_list( session_token, search_param )
+    raise ArgumentError if search_param.blank?
+  	message = { sessionToken: session_token, :propertyAddressMatch => { :singleLine => search_param } }
   	validating_response client(:property_search).call(:get_property_match, message: message).body[:get_property_match_response]
   end
 
@@ -46,7 +46,7 @@ module Rpdata
 
   def self.suburb_stats( session_token, suburb, postcode, state )
     options = { showNumberSold12Mths: true, showMedianSalePrice: true, showMedianPriceChange12Mths: true, showMedianAskingRent: true, showTotalListings12Mths: true, showTimeOnMarketDays: true }
-    message = { sessionToken: session_token, country: "AUS", categoryMjr: "HO", yearFrom: "2013", period: "10" , suburb: suburb , postcode: postcode, state: state, :propertyStatisticsOptions => options }  
+    message = { sessionToken: session_token, country: "AUS", categoryMjr: "HO", yearFrom: "2013", period: "10" , suburb: suburb , postcode: postcode, state: state, :propertyStatisticsOptions => options }
     body = client(:property_statistics).call(:get_suburb_statistics, message: message).body
     response = body[:get_suburb_statistics_response]
     OpenStruct.new({
@@ -61,57 +61,59 @@ module Rpdata
 
   def self.id_for_address( session_token, suggestion_string )
     id = suggestion_list(session_token, suggestion_string)[:property_address_match][:property_id] rescue nil
-    id ||= suggestion_list(session_token, suggestion_string)[:suggestions].first[:property_id] 
+    id ||= suggestion_list(session_token, suggestion_string)[:suggestions].first[:property_id]
     id
   end
 
   ##
   # Returns the property summary.
-  # 
+  #
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
   def self.property_summary( session_token , rp_data_property_id )
     with_valid_id(rp_data_property_id) do
-      message = { sessionToken: session_token, propertyId: rp_data_property_id }  
-      response_hash = client(:property).call(:get_property_summary, message: message).body    
+      message = { sessionToken: session_token, propertyId: rp_data_property_id }
+      response_hash = client(:property).call(:get_property_summary, message: message).body
       response_hash[:get_property_summary_response][:property_summary]
     end
   end
 
   ##
-  # Returns a list of property photos. 
-  # 
-  # 
+  # Returns a list of property photos.
+  #
+  #
   def self.property_photos( session_token, rp_data_property_id )
-    with_valid_id(rp_data_property_id) do 
+    with_valid_id(rp_data_property_id) do
       photos = []
       message = { sessionToken: session_token, propertyId: rp_data_property_id }
       response = client(:imagery).call(:get_photos, message: message).body
       response[:get_photos_response ][:photo].each do |photo_node|
         photos << OpenStruct.new( large_url: photo_node[:large_image_display_url] , medium_url: photo_node[:medium_image_display_url], small_url: photo_node[:small_image_display_url] , scan_date: photo_node[:scan_date])
       end
+
+      return photos
     end
   end
 
   ##
   # Returns the property details.
-  # 
+  #
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
   def self.property_details( session_token , rp_data_property_id )
     property_details = OpenStruct.new( sale_history: [], market_sale_history: [], market_rental_history: [])
-    with_valid_id(rp_data_property_id) do 
-      message = { sessionToken: session_token, propertyId: rp_data_property_id }  
+    with_valid_id(rp_data_property_id) do
+      message = { sessionToken: session_token, propertyId: rp_data_property_id }
       body = client(:property).call(:get_property_detail, message: message).body
       response = body[:get_property_detail_response][:property]
 
       if response[:sales_history_list].is_a?(Array)
         property_details.sale_history = response[:sales_history_list]
-      else  
+      else
         property_details.sale_history << response[:sales_history_list]
       end
       if response[:listing_list].is_a?(Array)
-        property_details.market_sale_history = response[:listing_list]  
+        property_details.market_sale_history = response[:listing_list]
       else
         property_details.market_sale_history << response[:listing_list]
       end
@@ -120,18 +122,18 @@ module Rpdata
       else
         property_details.market_rental_history << response[:rental_list]
       end
-    
+
       property_details
     end
   end
 
   ##
   # Returns the sale history for a property.
-  # 
+  #
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
   def self.sale_detail( session_token, rp_data_property_id )
-    with_valid_id(rp_data_property_id) do  
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id }
       response_hash = client(:sales).call(:get_sale_detail, message: message).body
       p = response_hash[:get_sale_detail_response][:sold_property]
@@ -142,7 +144,7 @@ module Rpdata
 
   def self.property_history( session_token, rp_data_property_id )
     property_history = OpenStruct.new( sale_history: [], otm_sale_history: [], otm_rental_history: [] )
-    with_valid_id(rp_data_property_id) do  
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id, fetchPropertySalesHistory: true , fetchPropertyOTMHistory: true, fetchPropertyOTMRentalHistory: true}
       hash = client(:valuers).call(:get_valuers, message: message).body
       property_sales = hash[hash.keys.first][:property_sales_history][:property_sales]
@@ -154,10 +156,10 @@ module Rpdata
         ps = property_sales #This piece of code needs refactoring.
         property_history.sale_history << OpenStruct.new({ vendor: ps[:vendors_name], purchaser: ps[:purchaser_name], sale_date: ps[:sale_date], sale_type: ps[:sale_type], sale_price: ps[:sale_price], settlement_date: ps[:settlement_date] })
       end
-      
+
       otms = hash[hash.keys.first][:property_otm_history][:property_ot_ms] rescue []
       if otms.is_a?(Array)
-        otms.each do |otm| 
+        otms.each do |otm|
           property_history.otm_sale_history << OpenStruct.new({ listed_date: otm[:listed_date], listed_sale_type: otm[:listed_sale_type],
            listed_sale_price: otm[:listed_sale_price], listed_sale_price_description: otm[:listed_sale_price_description],
             agency: otm[:agency], agent: otm[:agent], days_listed: otm[:days_listed] })
@@ -176,37 +178,37 @@ module Rpdata
     end
     property_history
   end
-  
+
   def self.fetch_property( session_token, rp_data_property_id )
-    with_valid_id(rp_data_property_id) do 
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyIdInput: { propertyIdList: rp_data_property_id }, fetchProperties: true, propertiesCriteria: {mappingDetailsOnly: false, pageNumber: 1, pageSize: 50} }
       response_hash = client(:property_search).call(:search, message: message).body
       property_hash = response_hash[:search_response][:property_search_properties_result][:property_search_properties]
       puts "fetch property"
       puts property_hash.inspect
-      OpenStruct.new(property_id: property_hash[:property_id], longitude: property_hash[:longitude], 
+      OpenStruct.new(property_id: property_hash[:property_id], longitude: property_hash[:longitude],
                      latitude: property_hash[:latitude], property_type: property_hash[:property_type],
-                     avm: property_hash[:auto_value_estimate], bedrooms: property_hash[:property_attributes][:bedrooms], 
+                     avm: property_hash[:auto_value_estimate], bedrooms: property_hash[:property_attributes][:bedrooms],
                      bathrooms: property_hash[:property_attributes][:bathrooms], car_spaces: property_hash[:property_attributes][:car_spaces])
     end
   end
 
   def self.property_ids_by_nearest_suburb( session_token, rp_data_property_id )
-    with_valid_id(rp_data_property_id) do 
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token , propertyId: rp_data_property_id, nearestNeighbourLimit: 5000 }
       response_hash = client(:property).call(:get_property_ids_by_nearest_neighbour, message: message ).body
-      response_hash[:get_property_ids_by_nearest_neighbour_response][:nearest_neighbours].collect do |hash| 
+      response_hash[:get_property_ids_by_nearest_neighbour_response][:nearest_neighbours].collect do |hash|
         OpenStruct.new property_id: hash[:property_id], distance_from_target: hash[:distance_from_target]
       end
     end
   end
 
   def self.refine_sold_properties( session_token, ids_list, target_property )
-    message = { sessionToken: session_token, bedrooms: target_property.bedrooms, propertyTypes: target_property.property_type, 
+    message = { sessionToken: session_token, bedrooms: target_property.bedrooms, propertyTypes: target_property.property_type,
                lastSalePriceFrom: (target_property.avm * 0.85 ) , lastSalePriceTo: (target_property.avm * 1.15 ), saleDateFrom: (Date.today - (12*30)).strftime("%Y-%m-%d") , propertyIdInput: { propertyIdList: ids_list } }
     response_hash = client(:sales).call(:refine_sold_properties, message: message).body
     response_hash[:refine_sold_properties_response][:property_id_list]
-  end 
+  end
 
   def self.recent_sales( session_token, ids_list )
     message = { session_token: session_token, propertyIdInput: { propertyIdList: ids_list }, fetchPropertyRecentSales: true , propertyRecentSalesCriteria: { pageNumber: 1 , pageSize: 10, mappingDetailsOnly: false }}
@@ -214,7 +216,7 @@ module Rpdata
     response_hash[:search_response][:property_search_recent_sales_result][:property_search_sales].collect{ |x| x[:property_id] }
   end
 
-  def self.refine_otm_properties( session_token, ids_list, target_property ) 
+  def self.refine_otm_properties( session_token, ids_list, target_property )
     message = { sessionToken: session_token, bedrooms: target_property.bedrooms,  listingPriceFrom: (target_property.avm * 0.85 ), listingPriceTo: (target_property.avm * 1.15 ), listingDateFrom: (Date.today - (21)).strftime("%Y-%m-%d") , propertyIdInput: { propertyIdList: ids_list } }
     response_hash = client(:on_the_market).call(:refine_otm_properties, message: message).body
     puts "response hash"
@@ -237,11 +239,11 @@ module Rpdata
 
   def self.comparable_otms_valuers( session_token, rp_data_property_id )
     comparable_otms = []
-    with_valid_id(rp_data_property_id) do  
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id, fetchPropertyComparableOTMs: true }
       hash = client(:valuers).call(:get_valuers, message: message).body
       (hash[hash.keys.first][:property_comparable_ot_ms][:comparable_ot_ms] rescue [] ).each do |cot|
-        comparable_otms << OpenStruct.new({ photo: (cot[:main_photo][:small_image_display_url] rescue nil), address: cot[:property_address][:address], 
+        comparable_otms << OpenStruct.new({ photo: (cot[:main_photo][:small_image_display_url] rescue nil), address: cot[:property_address][:address],
           price: cot[:listed_sale_price_description], listed_date: cot[:listed_date],
            attributes: cot[:attributes], agency: cot[:selling_agency], agent: cot[:selling_agent] })
       end
@@ -250,7 +252,7 @@ module Rpdata
   end
 
   def self.sales_radius_search( session_token, rp_data_property_id, radius )
-    with_valid_id( rp_data_property_id ) do 
+    with_valid_id( rp_data_property_id ) do
       message = { sessionToken: session_token, fetchPropertySales: true, propertySalesCriteria: { soldFromDate: (Date.today - 1).iso8601 , pageNumber: 1, pageSize: 3, mappingDetailsOnly: false } ,
       searchRadiusCriteria: { propertyTypes: ["UNIT, HOUSE"], radius: radius, latitude: '-33.87185899', longitude: '151.22386797'} }
       hash = client(:property_search).call(:search, message: message ).body
@@ -260,13 +262,13 @@ module Rpdata
   # A list of sold properties.
   def self.market_comparison( session_token, rp_data_property_id )
     market_comparisons = []
-    with_valid_id(rp_data_property_id) do  
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id, fetchPropertyMarketComparisons: true }
       hash = client(:valuers).call(:get_valuers, message: message).body
       hash[hash.keys.first][:property_market_comparisons][:market_comparisons].each do |mc|
-        market_comparisons << OpenStruct.new({ photo: ( mc[:main_photo][:small_image_display_url] rescue nil) , 
-          address: mc[:property_address][:address], 
-          days_on_market: mc[:days_on_the_market], 
+        market_comparisons << OpenStruct.new({ photo: ( mc[:main_photo][:small_image_display_url] rescue nil) ,
+          address: mc[:property_address][:address],
+          days_on_market: mc[:days_on_the_market],
           price: mc[:first_ad_price],
           attributes: mc[:attributes] })
       end
@@ -276,14 +278,14 @@ module Rpdata
 
   def self.comparable_sales( session_token, rp_data_property_id )
     comparable_sales = []
-    with_valid_id(rp_data_property_id) do  
+    with_valid_id(rp_data_property_id) do
       message = { sessionToken: session_token, propertyId: rp_data_property_id, fetchPropertyComparableSales: true }
       hash = client(:valuers).call(:get_valuers, message: message).body
       hash[hash.keys.first][:property_comparable_sales][:comparable_sales].each do |cs|
-        comparable_sales << OpenStruct.new({ photo: ( cs[:main_photo][:small_image_display_url] rescue nil) , 
-          address: cs[:property_address][:address], 
+        comparable_sales << OpenStruct.new({ photo: ( cs[:main_photo][:small_image_display_url] rescue nil) ,
+          address: cs[:property_address][:address],
           sale_date: cs[:last_sale_date],
-          sale_method: cs[:method_of_sale], 
+          sale_method: cs[:method_of_sale],
           price: cs[:last_sale_price],
           attributes: cs[:attributes] })
       end
@@ -293,7 +295,7 @@ module Rpdata
 
   ##
   # Returns the On The Market history for a property.
-  # 
+  #
   # Raises an ArgumentError if +rp_data_property_id+ is not provided.
   #
   def self.on_the_market_history( session_token, rp_data_property_id )
@@ -306,22 +308,22 @@ module Rpdata
 
   ##
   # Returns the list of available services
-  # 
+  #
   def self.available_services
     AVAILABLE_WSDLS.keys
   end
 
   def self.appraisal_data(session_token, rp_data_property_id)
-    with_valid_id(rp_data_property_id) do 
+    with_valid_id(rp_data_property_id) do
       year_built = ""
-      message = { sessionToken: session_token, propertyId: rp_data_property_id }  
-      body = client(:property).call(:get_property_detail, message: message).body    
+      message = { sessionToken: session_token, propertyId: rp_data_property_id }
+      body = client(:property).call(:get_property_detail, message: message).body
       body[body.keys.first][:property][:full_property_attributes].each do |full_property_attribute|
         year_built = full_property_attribute[:value] if full_property_attribute[:name] == "Year Built"
       end
       puts "poorra"
       puts body[body.keys.first][:property][:property_default_photo].inspect
-      address = body[body.keys.first][:property][:property_address] 
+      address = body[body.keys.first][:property][:property_address]
       attributes = body[body.keys.first][:property][:property_attributes]
       OpenStruct.new( unit_number: address[:unit_designator], street_number: address[:street_designator], address: address[:address],
         street_name: address[:street_name], street_type: address[:street_extension], post_code: address[:post_code], suburb: address[:locality_name], state: address[:state_code],
@@ -331,7 +333,7 @@ module Rpdata
   end
 
   private
-  
+
   def self.client( key )
   	Savon.client(wsdl: AVAILABLE_WSDLS[key], pretty_print_xml: false)
   end

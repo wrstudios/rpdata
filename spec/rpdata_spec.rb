@@ -100,6 +100,11 @@ describe Rpdata do
         it "should return a list of photos for a given property" do
           response = Rpdata.property_photos( @session_token, @rp_data_id )
           expect(response).to be_an_instance_of(Array)
+
+          item = response.sample
+          expect(item).to be_an_instance_of(OpenStruct)
+          expected_methods = [:large_url, :medium_url, :small_url, :scan_date]
+          expect(item.singleton_methods & expected_methods).to eq(expected_methods)
         end
 
         it "should raise an exception if an id is not provided" do
